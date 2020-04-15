@@ -1,0 +1,9 @@
+Basic -chain <Obey$Dir>.lesrc276
+CDir <Obey$Dir>.Release
+Copy <Obey$Dir>.* <Obey$Dir>.Release.* ~C~RQ~V
+
+Delete <Obey$Dir>.Release.!!Release
+Delete <Obey$Dir>.Release.KeyLib
+Delete <Obey$Dir>.Release.lesrc276
+Delete <Obey$Dir>.Release.README/md
+Delete <Obey$Dir>.Release.RebindBase
