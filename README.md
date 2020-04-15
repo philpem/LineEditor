@@ -20,3 +20,5 @@
 ```
 
 Thanks to Jon Abbott and Steve Pampling for the ["R4 patch"](https://www.riscosopen.org/forum/forums/11/topics/3454), which resolves a crash on RO4.39 and RO5.
+
+Original source code from: http://zap.tartarus.org/ftp/pub/ds/
