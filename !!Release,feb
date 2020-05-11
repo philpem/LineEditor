@@ -1,3 +1,4 @@
+Dir <Obey$Dir>
 Basic -chain <Obey$Dir>.lesrc276
 CDir <Obey$Dir>.Release
 Copy <Obey$Dir>.* <Obey$Dir>.Release.* ~C~RQ~V
