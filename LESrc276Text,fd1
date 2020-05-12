@@ -5140,7 +5140,7 @@
 5140BLI%=10000
 5141READ N%
 5142O%=OPENOUT(P$+"KeyLib")
-5143BPUT#O%,"BASIC -load "+P$+"RebindBase"
+5143BPUT#O%,"TEXTLOAD """+P$+"RebindBaseText"""
 5144REM BPUT#O%,"AU. 10000"
 5145REM BPUT#O%,"REM >KEYLIB"
 5146BPUT#O%,STR$(BLI%)+"DATA "+vsn$     : BLI%=BLI%+10
@@ -5151,11 +5151,9 @@
 5151 BLI%=BLI%+10
 5152NEXT
 5153BPUT#O%,"SAVE """+P$+"Rebinder"""
-5154BPUT#O%,"QUIT"
-5155BPUT#O%,"/"+P$+"RebindKeys"
+5155BPUT#O%,"*/"+P$+"RebindKeys"
 5156BPUT#O%,"":REM to accept default
 5157REM can't as I'm still open... BPUT#O%,"delete "+P$+"KeyLib"
-5158BPUT#O%,"ShellCLI_TaskQuit":REM ... so do this instead
 5159CLOSE #O%
 5160SYS "OS_File",18,P$+"KeyLib",&FFE:REM Command.. orig was FD6=TaskExec
 5161OSCLI "/"+P$+"KeyLib"

@@ -68,7 +68,7 @@
 680NEXT
 690CLOSE#H%
 700SYS "OS_File",10,M$,&FFA,,M%,M%+len%
-710SYS "OS_Module",11,M%,len%
+710REM SYS "OS_Module",11,M%,len%:REM Don't load the module now.
 720REM::FOR L%=0 TO 511:IF XXX%?L%<>T%?L% PRINTL%" ";XXX%?L%"->";T%?L%:N.ELSEN.
 730END
 740
