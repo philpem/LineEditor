@@ -81,44 +81,44 @@
 81[OPT12
 82.head&0
 83; NB order of these 5, and offset from start of block, are relied upon...
-84.bufsize & 0:.flags & 0:.minlen & 0:.maxlen & 0:.cursors & 0
-85.upcasetable & 0
-86.kbdtype & 0
+84.bufsize DCD 0:.flags DCD 0:.minlen DCD 0:.maxlen DCD 0:.cursors DCD 0
+85.upcasetable DCD 0
+86.kbdtype DCD 0
 87FNassert("bufsize=4")
 88FNassert("flags=8")
 89FNassert("minlen=12")
 90FNassert("maxlen=16")
 91FNassert("cursors=20")
-92.pKernel & 0
+92.pKernel DCD 0
 93]
 94IF countclientbuf% THEN
 95[OPT12
-96.clbufcnt & 0
+96.clbufcnt DCD 0
 97]
 98ENDIF
 99[OPT12
-100.morebufs & 0 ; Buffers managed for other folks
-101.tmp256 & 0 ; Scratch block
-102.lastth & 0:.osver & 0:.sizeofheader]
+100.morebufs DCD 0 ; Buffers managed for other folks
+101.tmp256 DCD 0 ; Scratch block
+102.lastth DCD 0:.osver DCD 0:.sizeofheader]
 103P%=0:O%=org:[OPT12; Instance -
-104.cur     & 0 ; Current ptr into history buf (0 => inactive, -1 => bottom)
-105.buf     & 0 ; pointer to start of history buffer
-106.end     & 0 ; Current pointer to end of buffer
-107.limit   & 0 ; pointer to end of history buffer ie maximum value of end
-108.next    & 0 ; pointer to next instance in linked list
-109.taskh   & 0 ; task handle (0 for not taskwindow) (-1 for client buffer)
-110.cltaskh & 0 ; task handle tied to client buffer (0 or -1 means none)
+104.cur     DCD 0 ; Current ptr into history buf (0 => inactive, -1 => bottom)
+105.buf     DCD 0 ; pointer to start of history buffer
+106.end     DCD 0 ; Current pointer to end of buffer
+107.limit   DCD 0 ; pointer to end of history buffer ie maximum value of end
+108.next    DCD 0 ; pointer to next instance in linked list
+109.taskh   DCD 0 ; task handle (0 for not taskwindow) (-1 for client buffer)
+110.cltaskh DCD 0 ; task handle tied to client buffer (0 or -1 means none)
 111                ; only set for client buffer, so check taskh first
-112.fkeybuf & 0 ; ptr to fnkey expansion (0 if none active)
-113.match   & 0 ; length of initial segment to match for PageUp/PageDown
-114.compcontext & 0 ; completion context structure
-115.gbpbbuf & 0 ; -> buffer for OS_GBPB (0=>none allocated)
-116.mtchbuf & 0 ; -> buffer for leaf match so far during filename completion
-117.yankbuf & 0 ; -> buffer for yank-able text
-118.r6      & 0 ; r6 for thingy
-119.r7      & 0 ; r7 for thingy
-120.pchar   & 0 ; password char
-121.root    & 0 ; root for command completion tree
+112.fkeybuf DCD 0 ; ptr to fnkey expansion (0 if none active)
+113.match   DCD 0 ; length of initial segment to match for PageUp/PageDown
+114.compcontext DCD 0 ; completion context structure
+115.gbpbbuf DCD 0 ; -> buffer for OS_GBPB (0=>none allocated)
+116.mtchbuf DCD 0 ; -> buffer for leaf match so far during filename completion
+117.yankbuf DCD 0 ; -> buffer for yank-able text
+118.r6      DCD 0 ; r6 for thingy
+119.r7      DCD 0 ; r7 for thingy
+120.pchar   DCD 0 ; password char
+121.root    DCD 0 ; root for command completion tree
 122; note should have buf <= cur <= end <= limit
 123FNassert("buf=4")
 124FNassert("end=8")
@@ -126,12 +126,12 @@
 126FNassert("cur=0")
 127.sizeofinst:]
 128P%=0:O%=org:[OPT12; completion context
-129.type    & 0
-130.dirname & 0 ; -> buffer for path during filename completion
-131.wildfnm & 0 ; -> buffer for wildcarded leaf we're trying to complete
-132.context & 0 ; last R4 for OS_GBPB call (-ve => not in one)
-133.match_s & 0
-134.match_e & 0
+129.type    DCD 0
+130.dirname DCD 0 ; -> buffer for path during filename completion
+131.wildfnm DCD 0 ; -> buffer for wildcarded leaf we're trying to complete
+132.context DCD 0 ; last R4 for OS_GBPB call (-ve => not in one)
+133.match_s DCD 0
+134.match_e DCD 0
 135.sizeofcontext:]
 136typeFile=0
 137typeSysvar=1
@@ -184,20 +184,20 @@
 184P%=0:O%=org
 185[OPT A%
 186;label          OP      args              ; Comment
-187                & 0
-188                & init              ; Initialisation entry
-189                & finalise          ; Finalisation entry
-190                & servicecall       ; Service call entry
-191                & titlestring       ; -> Title string
-192                & helpstring        ; -> Help string
-193                & keywordtable      ; -> Help/Command keyword table
-194                & swichunk          ; And now SWIs...
-195                & swihandler
-196                & switab
-197                & 0
-198                & 0
-199                & modflags
-200.modflags       & 1
+187                DCD 0
+188                DCD init              ; Initialisation entry
+189                DCD finalise          ; Finalisation entry
+190                DCD servicecall       ; Service call entry
+191                DCD titlestring       ; -> Title string
+192                DCD helpstring        ; -> Help string
+193                DCD keywordtable      ; -> Help/Command keyword table
+194                DCD swichunk          ; And now SWIs...
+195                DCD swihandler
+196                DCD switab
+197                DCD 0
+198                DCD 0
+199                DCD modflags
+200.modflags       DCD 1
 201.erasehisthelp  ADR     R0,szerasehisthelp
 202                ADR     R2,szerasehistory
 203.pprinthelpsyn  MOV     R5,R14
@@ -211,7 +211,7 @@
 211.edstatushelp   ADR     R0,szedstatushelp
 212                ADR     R2,szedstatus
 213                B       pprinthelpsyn
-214.ukswitok       & &1E6
+214.ukswitok       DCD &1E6
 215                = "BadSWI"+bl$
 216.helpstring    := prog$+tab$+vsn$+" ("+date$+")"+extra$+"  Olly Betts"+bl$
 217.syntax0args   := esc$+CHR$1+bl$    ; "Syntax; *<...>"
@@ -266,39 +266,39 @@
 266                MOV     PC,R10
 267.keywordtable
 268.szedstatus    := "EdStatus"+bl$:FNalign
-269                & edstatus
-270                & &20000000 ; help printed by code
-271                & syntax0args
-272                & edstatushelp
+269                DCD edstatus
+270                DCD &20000000 ; help printed by code
+271                DCD syntax0args
+272                DCD edstatushelp
 273.szerasehistory:= "EraseHistory"+bl$:FNalign
-274                & erasehistory
-275                & &20000000 ; help printed by code
-276                & syntax0args
-277                & erasehisthelp
+274                DCD erasehistory
+275                DCD &20000000 ; help printed by code
+276                DCD syntax0args
+277                DCD erasehisthelp
 278.szrecall      := "Recall"+bl$:FNalign
-279                & recall
-280                & &20000000 ; help printed by code
-281                & syntax0args
-282                & recallhelp
+279                DCD recall
+280                DCD &20000000 ; help printed by code
+281                DCD syntax0args
+282                DCD recallhelp
 283.szloadhist    := "LoadHistory"+bl$:FNalign
-284                & loadhistory
-285                & &20010001 ; help printed by code
+284                DCD loadhistory
+285                DCD &20010001 ; help printed by code
 286; Maybe we want to GSTrans it?
-287;               & &20010101 ; help printed by code
-288                & syntax1fnm
-289                & loadhisthelp
+287;               DCD &20010101 ; help printed by code
+288                DCD syntax1fnm
+289                DCD loadhisthelp
 290.szsavehist    := "SaveHistory"+bl$:FNalign
-291                & savehistory
-292                & &20010001 ; help printed by code
-293                & syntax1fnm
-294                & savehisthelp
+291                DCD savehistory
+292                DCD &20010001 ; help printed by code
+293                DCD syntax1fnm
+294                DCD savehisthelp
 295;                = "Editor"+bl$
 296;                FNalign
-297;                & 0
-298;                & &20000000 ; help printed by code
-299;                & 0
-300;                & editorhelp
-301                & 0
+297;                DCD 0
+298;                DCD &20000000 ; help printed by code
+299;                DCD 0
+300;                DCD editorhelp
+301                DCD 0
 302.swihandler     LDR     R12,[R12]
 303                CMP     R11,#(swijmptabend-swijmptab)/4
 304                ADDLO   PC,PC,R11,LSL#2
@@ -596,7 +596,7 @@
 596                ADR     R0,invalid_id_msg
 597                SWI     "XOS_GenerateError"
 598                LDMFD   sp !,{PC}
-599.invalid_id_msg & swichunk
+599.invalid_id_msg DCD swichunk
 600                = "Invalid history buffer ID"+bl$
 601                FNalign
 602; /E R1 = Free value, R2 = Total value
@@ -718,13 +718,13 @@
 718                EORNE   R14,R14,#f_LocalHist ; !HACK! !HACK! !HACK!
 719                TSTNE   R14,#f_LocalHist  ; NE => Global history
 720                LDRNE   R14,[R12,#head]
-721                TEQNE   R14,#0            ; NE => Global history & more inst
+721                TEQNE   R14,#0            ; NE => Global history DCD more inst
 722                LDREQ   R0,[R1,#buf]
 723                BLEQ    free
 724                MOV     R0,R1
 725                BL      free              ; Free instance
 726                LDMFD   sp !,{R0-R1,PC}
-727; Module finalisation - relase workspace & vector and restore cursor
+727; Module finalisation - relase workspace DCD vector and restore cursor
 728; /E R10 = 0 => non-fatal, 1 => fatal, R12 -> priv word, sp(R13) -> SVC stack
 729; /X May corrupt R0-R6, R12, R14, flags
 730.finalise       MOV     R6,R14
@@ -772,7 +772,7 @@
 772                SWI     "XOS_GenerateError"
 773                MOV     PC,R6
 774;
-775.dontdiemsg     & 0
+775.dontdiemsg     DCD 0
 776                = prog$+" in use"+bl$
 777                FNalign
 778.freetaskh      STMFD   R13!,{R0,R2-R3,R14}
@@ -787,12 +787,12 @@
 787                STRNE   R2,[R3,#next]     ; If taskwindow, unlink instance
 788                BLNE    freeinstance      ; and free it
 789                B       freethchainlp
-790.servicetable   & 0                 ; RO4-format service call table
-791                & serviceaccept
-792                & &27               ; Service_Reset
-793                & &53               ; Service_WimpCloseDown
-794                & 0
-795                & servicetable
+790.servicetable   DCD 0                 ; RO4-format service call table
+791                DCD serviceaccept
+792                DCD &27               ; Service_Reset
+793                DCD &53               ; Service_WimpCloseDown
+794                DCD 0
+795                DCD servicetable
 796; /E R1 = Service call number
 797.servicecall    MOV     R0,R0
 798                TEQ     R1,#&53           ; Service_WimpCloseDown
@@ -1460,7 +1460,7 @@
 1460                MOVEQ   R0,#(fkeybuff_len+8)
 1461                BLEQ    malloc
 1462                TEQ     R0,#0
-1463                BEQ     beep_nextchar     ; If malloc failed, beep & ignore
+1463                BEQ     beep_nextchar     ; If malloc failed, beep DCD ignore
 1464                STR     R0,[R9,#fkeybuf]
 1465                ADD     R1,R0,#8
 1466                LDR     R0,keyvar
@@ -2460,7 +2460,7 @@
 2460                SWI     XOS_WriteN        ; Write out R1 zeros
 2461                CMP     R0,R0
 2462                LDMFD   sp !,{R0-R3,PC}
-2463.eight_zeros    & 0:&    0          ; Only 7 actually needed
+2463.eight_zeros    DCD 0:&    0          ; Only 7 actually needed
 2464; /E R5 = private word pointer, R12 = contents of private word
 2465; /X R12 -> newly allocated workspace if R12=0 on entry
 2466.claimspace     TEQ     R12,#0            ; Have we already got workspace ?
@@ -2516,7 +2516,7 @@
 2516                LDMFD   sp !,{PC}
 2517;
 2518; NB not necessarily in RMA nowadays
-2519.noroom         & &101              ; No room in RMA error
+2519.noroom         DCD &101              ; No room in RMA error
 2520                = "Couldn't allocate memory"+bl$
 2521                FNalign
 2522; Emit a beep - a subroutine so we can easily get beeps in taskwindows
@@ -3368,9 +3368,9 @@
 3368                ADD     r0,r0,r14
 3369                SWI     XOS_Write0
 3370                LDMFD   sp !,{R0,PC}
-3371.cmdtypetab     & cmd_alias-(cmdtypetab-4)
-3372                & cmd_command-(cmdtypetab-4)
-3373                & cmd_fileobj-(cmdtypetab-4)
+3371.cmdtypetab     DCD cmd_alias-(cmdtypetab-4)
+3372                DCD cmd_command-(cmdtypetab-4)
+3373                DCD cmd_fileobj-(cmdtypetab-4)
 3374.cmd_alias:= "Alias"+CHR$0:FNalign
 3375.cmd_command:= "Command"+CHR$0:FNalign
 3376.cmd_fileobj:= "File/Object"+CHR$0
@@ -4591,10 +4591,10 @@
 4591                CMP     R0,R0
 4592                LDMFD   sp !,{r0,r1,r2-r8,PC}
 4593.area_info
-4594.area_number    &    0 ; !HACK! these 4 need to be writable
-4595.area_size      &    0
-4596.area_base      &    0
-4597.area_blocks    &    0
+4594.area_number    DCD    0 ; !HACK! these 4 need to be writable
+4595.area_size      DCD    0
+4596.area_base      DCD    0
+4597.area_blocks    DCD    0
 4598; *************************************** unison dynamic area handling code
 4599.area_handler
 4600  MOV   PC,R14
