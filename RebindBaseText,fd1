@@ -1,0 +1,76 @@
+10REM >Rebinder
+20CLS
+30PRINT"This program modifies the LineEditor module on disk to"
+40PRINT"change the key bindings."
+50PRINT'"You need to input the name of the file with the new"
+60PRINT"keybindings in."'
+70M$="<LineEditor$Dir>.LineEditor"
+80H%=OPENIN M$:len%=EXT#H%:CLOSE#H%
+90READ v$,N%
+100DIM T$(N%)
+110DIM C% N%, M% len%
+120SYS "OS_File",&FF,M$,M%,0
+130T%=M%+len%-512
+140v%=TRUE:Pg%=0
+150FOR L%=0 TO N%-1
+160 READ T$(L%),C%?L%
+170 IF T$(L%)="vanilla" v%=L%
+180NEXT
+190IF v%=-1 PRINT"No vanilla in key table":END
+200IF INSTR(FNz(M%+M%!20),"Line Editor"+CHR$9+v$)<>1 PRINT"Incorrect key file version for module":END
+210INPUT "Key definitions file (RETURN for default): "F$
+220IF F$="" F$="<LineEditor$Dir>.DfltKeys"
+230WS$=" "+CHR$9
+240REM::DIM XXX% 512:FOR L%=0 TO 511:XXX%?L%=T%?L%:NEXT
+250FOR L%=0 TO 511:T%?L%=C%?v%:NEXT
+260H%=OPENIN(F$)
+270WHILE NOT EOF#H%
+280 L$=GET$#H%
+290 I%=INSTR(L$,"&")
+300 IF I% THEN
+310  T$=MID$(L$,I%)
+320  REM HACKARAMA
+330  I%=INSTR(T$,"-"):IF I% T$=LEFT$(T$,I%-1)+"~"+MID$(T$,I%+1)
+340  K%=EVALT$:K2%=K%
+350  REPEAT T$=MID$(T$,2)
+360  UNTIL INSTR("0123456789ABCDEFabcdef",LEFT$(T$,1))=0 OR T$=""
+370  IF LEFT$(T$,1)="~" THEN
+380   T$=MID$(T$,2)
+390   IF LEFT$(T$,1)<>"&" T$="&"+T$
+400   K2%=EVALT$
+410   REPEAT T$=MID$(T$,2)
+420   UNTIL INSTR("0123456789ABCDEFabcdef",LEFT$(T$,1))=0 OR T$=""
+430  ENDIF
+440  WHILE INSTR(WS$,LEFT$(T$,1)) AND T$<>""
+450   T$=MID$(T$,2)
+460  ENDWHILE
+470  REM T$ is the action token for key codes K% to K2%
+480  REM force to upper-case
+490  t$=T$:T$="":FOR L%=1TOLENt$:T$+=CHR$(ASCMID$(t$,L%,1)OR32):NEXT
+500  t%=0
+510  WHILE T$<>T$(t%) AND t%<N%
+520   t%+=1
+530  ENDWHILE
+540  IF t%=N% PRINT"Bad TOKEN '"T$"'":CLOSE#H%:END
+550  IF K%<0 OR K%>&1FF OR K2%<0 OR K2%>&1FF PRINT"Bad key number":CLOSE#H%:END
+560REM::PRINTK%"-";K2%" ";t%
+570  FOR L%=K% TO K2%
+580   T%?L%=C%?t%
+590   IF (L% AND &1CE)=&1CE THEN Pg%=Pg% EOR 1<<((L% AND &30)>>3 OR (L% AND 1))
+600  NEXT
+610 ENDIF
+620ENDWHILE
+630REM Bind Page{Up,Down} to same as Up, Down (allowing for Shift) if unbound
+640FOR L%=0 TO 7
+650 IF (Pg% AND 1<<L%)=0 THEN
+660  K%=(L% AND 6)<<3 OR (L% AND 1):T%?(K% EOR &1DE)=T%?(K%+&18E)
+670 ENDIF
+680NEXT
+690CLOSE#H%
+700SYS "OS_File",10,M$,&FFA,,M%,M%+len%
+710SYS "OS_Module",11,M%,len%
+720REM::FOR L%=0 TO 511:IF XXX%?L%<>T%?L% PRINTL%" ";XXX%?L%"->";T%?L%:N.ELSEN.
+730END
+740
+750DEFFNz(A%):LOCAL A$:WHILE ?A%:A$+=CHR$?A%:A%+=1:ENDWHILE:=A$
+760
