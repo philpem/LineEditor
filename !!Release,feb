@@ -1,10 +1,12 @@
 Dir <Obey$Dir>
 Basic -chain <Obey$Dir>.lesrc276text
 CDir <Obey$Dir>.Release
-Copy <Obey$Dir>.* <Obey$Dir>.Release.* ~C~RQ~V
+Copy <Obey$Dir>.* <Obey$Dir>.Release.* ~C~RQ
 
 Delete <Obey$Dir>.Release.!!Release
 Delete <Obey$Dir>.Release.KeyLib
 Delete <Obey$Dir>.Release.lesrc276
 Delete <Obey$Dir>.Release.README/md
 Delete <Obey$Dir>.Release.RebindBase
+
+Echo Release successfully built.
