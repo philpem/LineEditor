@@ -47,7 +47,7 @@
 47:
 48ON ERROR PROCerr:END
 49REM Need to fettle places where comments say !HACK! [case sens]
-50vsn$="2.76d (R4-patch)":date$="15 Apr 2020":REM or MID$(TIME$,5,11)
+50vsn$=FNversionnum:date$=MID$(TIME$,5,11)
 51extra$=" "
 52fnm$="LineEditor"
 53TIME=0
@@ -5199,3 +5199,17 @@
 5201DATA paste, swapchars, quote, vanilla, cup, cdown, up, down, sup, sdown
 5202DATA escape, fnkey, wipeallhistory, enter, return, uncopy
 5203DATA showcomp, completeshow, fileropen
+5220:
+5221REM Read the version number from the VersionNum file
+5222DEFFNversionnum
+5223LOCAL i%, line$, version$
+5224i%=OPENIN("VersionNum")
+5225WHILE NOT EOF#i%
+5226  line$=GET$#i%
+5227  IF LEFT$(line$, 28) = "#define Module_MajorVersion " THEN
+5228    version$=MID$(line$, INSTR(line$, """")+1)
+5229    version$=LEFT$(version$, LEN(version$)-1)
+5230  ENDIF
+5231ENDWHILE
+5232CLOSE#i%
+5233=version$

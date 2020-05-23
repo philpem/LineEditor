@@ -20,32 +20,62 @@ jobs:
     # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
     - uses: actions/checkout@v2
 
-    - name: Zip up the source to send to JFPaaS
-      run: zip -9 /tmp/source-archive.zip * .robuild.yml
-
-    - name: Send the file to JFPatch as a service
-      run: curl -F 'source=@/tmp/source-archive.zip' http://jfpatch.riscos.online/build/json > /tmp/output.json
-
-    - name: Show any messages
-      run: jq .output[] /tmp/output.json
-
-    - name: Check the return code
+    # Step intended to be reused in CI pipelines.
+    - name: Build through JFPatch-as-a-service
       run: |
-        rc=$(jq -r .rc /tmp/output.json)
-        echo RC: $rc
-        if [ "$rc" != "0" ] ; then
-            echo "FAILED" >&2
+        set -o pipefail
+        mkdir /tmp/robuild
+        # Zip up the source to send to robuild
+        zip -9r /tmp/source-archive.zip * .robuild.yml
+        # Send the archive file to JFPatch as a service
+        curl -q -F 'source=@/tmp/source-archive.zip' -o /tmp/robuild/result.json http://jfpatch.riscos.online/build/json
+        # Extract any sysetm messages and output
+        jq -r '.messages[]' /tmp/robuild/result.json > /tmp/robuild/messages.txt
+        jq -r 'reduce .output[] as $i ("";. + $i)' /tmp/robuild/result.json > /tmp/robuild/output.txt
+        # Extract return code
+        rc=$(jq -r .rc /tmp/robuild/result.json | tee /tmp/robuild/rc.json)
+        # Marker files for the state
+        if [ "$rc" != "0" ] ; then touch /tmp/robuild/failed ; else touch /tmp/robuild/ok ; fi
+        # Extract the built binary if we had any
+        if [ "$rc" = "0" ] ; then
+            jq -r .data /tmp/robuild/result.json | base64 --decode - > /tmp/robuild/built
+        fi
+    # Outputs:
+    #   /tmp/robuild/result.json    - JSON output from the service.
+    #   /tmp/robuild/{ok,failed}    - status of the build (whether RC was 0).
+    #   /tmp/robuild/built          - the output result from the build.
+    #   /tmp/robuild/rc             - the value of the return code (decimal string)
+    #   /tmp/robuild/messages.txt   - system messages
+    #   /tmp/robuild/output.txt     - output from the build
+
+    # Another drop in, which uses that information to show the results
+    - name: Did it work?
+      run: |
+        echo "System messages:"
+        sed 's/^/  /' < /tmp/robuild/messages.txt
+        echo
+        echo "Build output:"
+        sed 's/^/  /' < /tmp/robuild/output.txt
+        echo
+        if [ ! -f /tmp/robuild/ok ] ; then
+            echo "FAILED! Aborting"
             exit 1
         fi
 
-    - name: Extract output archive
+    - name: Give the archive a versioned name
       run: |
-        jq -r .data /tmp/output.json > /tmp/output.base64
-        base64 --decode /tmp/output.base64 > /tmp/LineEditor.zip
+        version=$(sed '/MajorVersion / ! d ; s/.*MajorVersion *"\(.*\)"/\1/' VersionNum)
+        echo This is version: $version
+        if [ -f /tmp/robuild/built ] ; then
+            cp /tmp/robuild/built "/tmp/robuild/LineEditor-$version.zip"
+        else
+            echo "No archive was built?"
+            exit 1
+        fi
 
     - uses: actions/upload-artifact@v2
       with:
         name: LineEditor
-        path: /tmp/LineEditor.zip
+        path: /tmp/robuild/LineEditor*.zip
       # The artifact that is downloadable from the Actions is actually a zip of the artifacts
       # that we supply. So it will be a regular Zip file containing a RISC OS Zip file.
