@@ -1,5 +1,7 @@
 # LineEditor module for RISC OS, 32-bit with bugfixes
 
+![CI](https://github.com/philpem/LineEditor/workflows/CI/badge.svg)
+
 ## Build instructions
 
   * Check out on a network share (or into RPCEmu's HostFS directory)
