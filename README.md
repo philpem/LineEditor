@@ -4,8 +4,8 @@
 
   * Check out on a network share (or into RPCEmu's HostFS directory)
   * Mount network share or HostFS directory
-  * Run 'lesrc276'
-  
+  * Run '!!Release'
+
 ## Installation
 
   * Build as above
