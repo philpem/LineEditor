@@ -938,6 +938,8 @@ ENDIF
                 SWI     XOS_Byte          ; expansion and if so, don't try
                 SWI     XOS_ReadC         ; and work out a Zap keycode
                 BCS     badreadc
+                ORRVS   R8,R8,#fEsc%      ; V set so handle TaskWindow closing
+                BVS     leaveedit
                 TEQ     R1,#0
                 BNE     vanilla
                 MOV     R4,R0
@@ -5201,7 +5203,7 @@ DATA escape, fnkey, wipeallhistory, enter, return, uncopy
 DATA showcomp, completeshow, fileropen
 :
 REM Read the version number from the VersionNum file
-DEFFNversionnum
+DEF FNversionnum
 LOCAL i%, line$, version$
 i%=OPENIN("VersionNum")
 WHILE NOT EOF#i%
