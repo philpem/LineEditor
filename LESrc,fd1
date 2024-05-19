@@ -213,7 +213,7 @@ P%=0:O%=org
                 B       pprinthelpsyn
 .ukswitok       DCD &1E6
                 = "BadSWI"+bl$
-.helpstring    := prog$+tab$+vsn$+" ("+date$+")"+extra$+"  Olly Betts"+bl$
+.helpstring    := prog$+tab$+vsn$+" ("+date$+")"+extra$+"  Olly Betts et al"+bl$
 .syntax0args   := esc$+CHR$1+bl$    ; "Syntax; *<...>"
 FNalign ; so syntax1fnm can be reached by ADRs
 .syntax1fnm    := esc$+CHR$27+bl$   ; "Syntax; *<...> <filename>"
