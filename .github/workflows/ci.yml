@@ -54,6 +54,7 @@ jobs:
         run: |
           # Zip up the source to send to robuild
           zip -q9r /tmp/source-archive.zip * .robuild.yml
+          zip -d /tmp/source-archive.zip riscos-build-online
 
           # Send the archive file to build service (timeout of 60 seconds)
           ./riscos-build-online -i /tmp/source-archive.zip -a off -t 60 -o /tmp/built
