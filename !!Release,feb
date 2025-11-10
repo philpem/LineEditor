@@ -6,5 +6,8 @@ Copy <Obey$Dir>.* <Obey$Dir>.Release.* ~C~RQ
 Delete <Obey$Dir>.Release.!!Release
 Delete <Obey$Dir>.Release.KeyLib
 Delete <Obey$Dir>.Release.README/md
+Delete <Obey$Dir>.Release./robuild/yml
+IfThere <Obey$Dir>.Release._source_ Then Wipe <Obey$Dir>.Release._source_ ~CFR
+Remove <Obey$Dir>.Release.riscos-build-online
 
 Echo Release successfully built.
