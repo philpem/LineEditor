@@ -1,0 +1,429 @@
+<?xml version="1.0"?>
+<!DOCTYPE riscos-prm PUBLIC "-//Gerph//DTD PRM documentation 1.03//EN"
+                            "http://gerph.org/dtd/103/prm.dtd">
+
+<riscos-prm>
+<chapter title="LineEditor">
+<section title="Introduction and Overview">
+<p>
+LineEditor replaces the standard RISC OS line-input editor with an editor which
+supports command history, cursor movement, insertion and overtyping, word and
+region operations, filename and command completion, and configurable key
+bindings. Programs which use <reference type="swi" name="OS_ReadLine"/> gain
+these facilities without needing a LineEditor-specific interface.
+</p>
+<p>
+The module maintains either one global history or a separate history for each
+TaskWindow. It also provides SWIs with which applications can create and manage
+private histories or invoke the editor directly. LineEditor is responsible for
+editing and history management; the calling program remains responsible for
+providing the input buffer, interpreting the completed line, and displaying any
+subsequent output.
+</p>
+</section>
+
+<section title="Technical Details">
+<subsection title="Operation">
+<p>
+On initialisation, LineEditor claims ReadLineV. It therefore intercepts normal
+<reference type="swi" name="OS_ReadLine"/> calls and associates each call with
+the active TaskWindow. With local histories enabled, each TaskWindow receives
+its own history buffer. Otherwise, all callers share the global history.
+</p>
+<p>
+History storage is allocated in the <systemoutput>LineEditor Buffers</systemoutput>
+dynamic area when dynamic areas are available, with a maximum size of 1 Mbyte.
+On systems without dynamic areas the module uses the RMA. The configured buffer
+size applies to each newly created history buffer. Changing the configured size
+does not resize buffers which already exist.
+</p>
+<p>
+When a TaskWindow closes, its local editing state and local history are released.
+The module cannot be killed while a line is being edited or while a client-owned
+history buffer exists.
+</p>
+</subsection>
+
+<subsection title="Editing facilities">
+<p>
+The default key map provides character and word movement, insertion and
+overtyping, deletion, a mark and cut/yank operations, history traversal,
+history-prefix searches, filename and command completion, and function-key
+expansion. Use <userinput>*Help LineEditor</userinput> to display the current
+default bindings. The supplied <filename>DfltKeys</filename> and
+<filename>RebindKeys</filename> files describe and install alternative bindings.
+</p>
+<p>
+History expansion recognises a leading <userinput>!</userinput> followed by a
+history number, a negative offset, or another <userinput>!</userinput>, and the
+form <userinput>^old^new</userinput> replaces text from the preceding command.
+A leading <userinput>~text</userinput> recalls the unique history entry beginning
+with <userinput>text</userinput>. Each form can be disabled through
+<reference type="swi" name="LineEditor_SetOptions"/>.
+</p>
+</subsection>
+
+<subsection title="Configuration at module start">
+<p>
+The module may be started with up to five unsigned values:
+</p>
+<p><userinput>*RMRun LineEditor <userreplace>size</userreplace>
+<userreplace>flags</userreplace> <userreplace>minimum</userreplace>
+<userreplace>maximum</userreplace> <userreplace>cursors</userreplace></userinput></p>
+<p>
+The values have the same meanings as R0 to R4 of
+<reference type="swi" name="LineEditor_SetOptions"/>. Omitted values use their
+defaults. The default history size is 4 Kbytes, the minimum recorded length is
+1 character, there is no effective maximum recorded length, and the default
+cursor word is &hex;100.
+</p>
+</subsection>
+
+<subsection title="Private history buffers">
+<p>
+A client creates a private history with
+<reference type="swi" name="LineEditor_CreateBuffer"/> and passes the returned
+handle to the other history SWIs. Handles are opaque and remain valid until
+explicitly deleted, automatically deleted following the associated task's
+Wimp close-down, or removed when the module is reinitialised. A client must not
+inspect or modify a handle as an address.
+</p>
+<p>
+Lines are numbered from zero, oldest first. The current position is independent
+for each private buffer. The logical position following the newest recorded line
+is an empty end position and can be selected with
+<reference type="swi" name="LineEditor_SetPos"/>.
+</p>
+</subsection>
+</section>
+
+<section title="SWI Calls">
+<swi-definition name="LineEditor_SetOptions" number="83880"
+                description="Sets the global LineEditor options"
+                irqs="enabled" fiqs="enabled" processor-mode="SVC" re-entrant="no">
+<entry>
+ <register-use number="0">History-buffer size in Kbytes, or 0 for the default of 4 Kbytes</register-use>
+ <register-use number="1">Options:
+  <bitfield-table>
+   <bit number="0" name="LocalHistory" state="clear">use a shared global history</bit>
+   <bit number="0" name="LocalHistory" state="set">use a separate history for each TaskWindow</bit>
+   <bit number="1" name="TrailingDot" state="clear">do not append a dot to completed directory names</bit>
+   <bit number="1" name="TrailingDot" state="set">append a dot to completed directory names</bit>
+   <bit number="2" name="Overtype" state="clear">start each edit in insert mode</bit>
+   <bit number="2" name="Overtype" state="set">start each edit in overtype mode</bit>
+   <bit number="3" name="Duplicates" state="clear">discard duplicate history lines</bit>
+   <bit number="3" name="Duplicates" state="set">retain duplicate history lines</bit>
+   <bit number="4" name="TildeExpansion" state="clear">enable leading-tilde history recall</bit>
+   <bit number="4" name="TildeExpansion" state="set">disable leading-tilde history recall</bit>
+   <bit number="5" name="EventExpansion" state="clear">enable exclamation-mark history expansion</bit>
+   <bit number="5" name="EventExpansion" state="set">disable exclamation-mark history expansion</bit>
+   <bit number="6" name="Replacement" state="clear">enable caret replacement</bit>
+   <bit number="6" name="Replacement" state="set">disable caret replacement</bit>
+   <bit number="7" name="LeadingSpaces" state="clear">allow lines beginning with spaces in the history</bit>
+   <bit number="7" name="LeadingSpaces" state="set">do not record lines beginning with spaces</bit>
+   <bit number="8-31" state="reserved"/>
+  </bitfield-table>
+ </register-use>
+ <register-use number="2">Minimum line length to record, or 0 for 1 character</register-use>
+ <register-use number="3">Maximum line length to record, or 0 for no effective maximum</register-use>
+ <register-use number="4">Cursor appearance. Byte 0 controls the insert cursor and byte 1 the overtype cursor. In each byte, bit 0 selects underline when clear or block when set; bit 1 selects flashing when clear or steady when set. Other bits are reserved.</register-use>
+</entry>
+<exit/>
+<use>
+<p>
+This call changes the global editing and history policy. Existing history
+buffers retain their allocated size; subsequently created buffers use the new
+size. Zero values in R0, R2 and R3 are converted to their defaults before being
+stored.
+</p>
+</use>
+<related><reference type="swi" name="LineEditor_GetOptions"/></related>
+</swi-definition>
+
+<swi-definition name="LineEditor_GetOptions" number="83881"
+                description="Reads the global LineEditor options"
+                irqs="enabled" fiqs="enabled" processor-mode="SVC" re-entrant="no">
+<entry/>
+<exit>
+ <register-use number="0">Configured history-buffer size in Kbytes</register-use>
+ <register-use number="1">Option bits, as for <reference type="swi" name="LineEditor_SetOptions"/></register-use>
+ <register-use number="2">Configured minimum line length to record</register-use>
+ <register-use number="3">Configured maximum line length to record; a large internal limit represents no effective maximum</register-use>
+ <register-use number="4">Configured cursor appearance word</register-use>
+</exit>
+<use><p>Returns the normalised values currently held by the module. Default values are returned explicitly rather than as zero.</p></use>
+<related><reference type="swi" name="LineEditor_SetOptions"/></related>
+</swi-definition>
+
+<swi-definition name="LineEditor_CreateBuffer" number="83882"
+                description="Creates a private history buffer"
+                irqs="enabled" fiqs="enabled" processor-mode="SVC" re-entrant="no">
+<entry>
+ <register-use number="0">History-buffer size in Kbytes, or 0 for the configured default</register-use>
+ <register-use number="1">-1 for an independent buffer, or a Wimp task handle to which the buffer is to be tied</register-use>
+ <register-use number="2">0; reserved for expansion</register-use>
+</entry>
+<exit><register-use number="0">Opaque history-buffer handle</register-use></exit>
+<use>
+<p>
+Creates an empty history and positions it at line zero. If R1 contains a Wimp
+task handle, the buffer is deleted automatically when that task closes. The call
+may return the standard RMA no-room error if the buffer cannot be allocated.
+</p>
+</use>
+<related><reference type="swi" name="LineEditor_DeleteBuffer"/><reference type="swi" name="LineEditor_ReadLine"/></related>
+</swi-definition>
+
+<swi-definition name="LineEditor_DeleteBuffer" number="83883"
+                description="Deletes a private history buffer"
+                irqs="enabled" fiqs="enabled" processor-mode="SVC" re-entrant="no">
+<entry><register-use number="0">History-buffer handle</register-use></entry>
+<exit/>
+<use><p>Releases the buffer and invalidates its handle. The buffer must not be in use by <reference type="swi" name="LineEditor_ReadLine"/>.</p></use>
+<related><reference type="swi" name="LineEditor_CreateBuffer"/></related>
+</swi-definition>
+
+<swi-definition name="LineEditor_SetPos" number="83884"
+                description="Sets the current position in a private history"
+                irqs="enabled" fiqs="enabled" processor-mode="SVC" re-entrant="no">
+<entry>
+ <register-use number="0">History-buffer handle</register-use>
+ <register-use number="1">Line number or operation:
+  <value-table head-number="Value" head-value="Position or operation">
+   <value number="0 or greater">absolute line number, with zero denoting the oldest line</value>
+   <value number="negative">line relative to the end of the history</value>
+   <value number="&amp;7FFFFFFF">empty end position</value>
+   <value number="&amp;80000000">previous line, wrapping at the start</value>
+   <value number="&amp;80000001">previous line, stopping at the start</value>
+   <value number="&amp;80000002">next line, stopping at the end</value>
+   <value number="&amp;80000003">next line, wrapping at the end</value>
+  </value-table>
+ </register-use>
+</entry>
+<exit/>
+<use><p>Changes the line returned by <reference type="swi" name="LineEditor_GetLine"/>. An absolute or relative position beyond the available history is clamped to the applicable end.</p></use>
+<related><reference type="swi" name="LineEditor_GetPos"/><reference type="swi" name="LineEditor_GetLine"/></related>
+</swi-definition>
+
+<swi-definition name="LineEditor_GetPos" number="83885"
+                description="Reads the current position in a private history"
+                irqs="enabled" fiqs="enabled" processor-mode="SVC" re-entrant="no">
+<entry><register-use number="0">History-buffer handle</register-use></entry>
+<exit><register-use number="1">Zero-based current line number</register-use></exit>
+<use><p>Returns the current position as an absolute line number.</p></use>
+<related><reference type="swi" name="LineEditor_SetPos"/></related>
+</swi-definition>
+
+<swi-definition name="LineEditor_GetLine" number="83886"
+                description="Copies the current history line"
+                irqs="enabled" fiqs="enabled" processor-mode="SVC" re-entrant="no">
+<entry>
+ <register-use number="0">History-buffer handle</register-use>
+ <register-use number="1">Pointer to output buffer</register-use>
+ <register-use number="2">Output-buffer size in bytes; must be at least 1</register-use>
+</entry>
+<exit><register-use number="2">Full length of the selected line, excluding its terminator</register-use></exit>
+<use>
+<p>
+Copies as much of the selected line as fits and terminates the copy with a NUL.
+If the returned length is greater than or equal to the supplied buffer size, the
+copy was truncated; call again with a buffer of at least the returned length plus
+one byte to obtain the complete line. The end position returns an empty string.
+</p>
+</use>
+<related><reference type="swi" name="LineEditor_SetPos"/></related>
+</swi-definition>
+
+<swi-definition name="LineEditor_AppendLine" number="83887"
+                description="Appends a line to a private history"
+                irqs="enabled" fiqs="enabled" processor-mode="SVC" re-entrant="no">
+<entry>
+ <register-use number="0">History-buffer handle</register-use>
+ <register-use number="1">Pointer to text terminated by any control character</register-use>
+</entry>
+<exit/>
+<use><p>Offers a line to the history. The configured minimum and maximum lengths, duplicate-line policy and leading-space policy are applied. If necessary, the oldest entries are discarded to make room.</p></use>
+<related><reference type="swi" name="LineEditor_DeleteLine"/></related>
+</swi-definition>
+
+<swi-definition name="LineEditor_DeleteLine" number="83888"
+                description="Deletes the current line from a private history"
+                irqs="enabled" fiqs="enabled" processor-mode="SVC" re-entrant="no">
+<entry><register-use number="0">History-buffer handle</register-use></entry>
+<exit/>
+<use><p>Deletes the line at the position selected by <reference type="swi" name="LineEditor_SetPos"/> and adjusts positions held for other users of the same history.</p></use>
+<related><reference type="swi" name="LineEditor_AppendLine"/><reference type="swi" name="LineEditor_SetPos"/></related>
+</swi-definition>
+
+<swi-definition name="LineEditor_ReadInfo" number="83889"
+                description="Reads the state of a TaskWindow edit"
+                irqs="enabled" fiqs="enabled" processor-mode="SVC" re-entrant="no">
+<entry><register-use number="0">Wimp task handle of the TaskWindow</register-use></entry>
+<exit>
+ <register-use number="0">State or line length:
+  <value-table head-number="Value" head-value="Meaning">
+   <value number="-2">the task is not known to LineEditor</value>
+   <value number="-1">the task is known, but no edit is in progress</value>
+   <value number="0 or greater">length of the line being edited</value>
+  </value-table>
+ </register-use>
+ <register-use number="1">Cursor offset when R0 is zero or greater; otherwise undefined</register-use>
+</exit>
+<use><p>Allows an editor or TaskWindow server to reflect the cursor position of a line currently being edited.</p></use>
+</swi-definition>
+
+<swi-definition name="LineEditor_ReadLine" number="8388A"
+                description="Reads and edits a line using a private history"
+                irqs="enabled" fiqs="enabled" processor-mode="SVC" re-entrant="no">
+<entry>
+ <register-use number="0">Pointer to the caller's text buffer</register-use>
+ <register-use number="1">Maximum number of characters accepted</register-use>
+ <register-use number="2">Lowest character value accepted</register-use>
+ <register-use number="3">Highest character value accepted</register-use>
+ <register-use number="4">Character displayed for input when password display is selected</register-use>
+ <register-use number="5">Flags:
+  <bitfield-table>
+   <bit number="0" name="Password" state="clear">display entered characters normally</bit>
+   <bit number="0" name="Password" state="set">display R4 in place of each entered character</bit>
+   <bit number="1" name="ControlEcho" state="clear">echo control characters</bit>
+   <bit number="1" name="ControlEcho" state="set">do not echo control characters</bit>
+   <bit number="2-31" state="reserved"/>
+  </bitfield-table>
+ </register-use>
+ <register-use number="6">History-buffer handle</register-use>
+</entry>
+<exit>
+ <register-use number="0" state="corrupted"/>
+ <register-use number="1">Number of characters read, excluding the terminator</register-use>
+ <register-use number="2-3" state="preserved"/>
+ <processor-flag name="C">set if Escape terminated the edit; clear otherwise</processor-flag>
+</exit>
+<use>
+<p>
+Provides the LineEditor editing interface to a client which owns a private
+history. The input and output conventions otherwise follow
+<reference type="swi" name="OS_ReadLine"/>. Password input is not placed in the
+history and history-oriented editing operations are disabled while it is read.
+</p>
+</use>
+<related><reference type="swi" name="LineEditor_CreateBuffer"/></related>
+</swi-definition>
+</section>
+
+<section title="System Variables">
+<p>
+These variables contain output sequences written at transitions in the editing
+display. They are principally intended for setting text colours in a
+single-tasking command-line environment. An unset variable produces no output.
+</p>
+<sysvar-definition name="LineEditor$Edit" description="Sequence written before editing text is displayed">
+ <use><p>The value is written before an edit begins and after a completion listing, restoring the appearance used for the prompt and editable text.</p></use>
+</sysvar-definition>
+<sysvar-definition name="LineEditor$Output" description="Sequence written when editing finishes">
+ <use><p>The value is written after a line edit ends, selecting the appearance used for output from the command which follows.</p></use>
+</sysvar-definition>
+<sysvar-definition name="LineEditor$List" description="Sequence written while completion entries are displayed">
+ <use><p>The value is written before the completion list and again after each entry's type marker.</p></use>
+</sysvar-definition>
+<sysvar-definition name="LineEditor$Type" description="Sequence written before a completion entry's type marker">
+ <use><p>The value is written between a completion name and the marker which identifies a directory, executable file, system variable, filing system or command type.</p></use>
+</sysvar-definition>
+</section>
+
+<section title="Service Calls">
+<service-definition name="Reset" number="27" description="The machine is being reset">
+<entry>
+ <register-use number="1">&hex;27 (reason code)</register-use>
+</entry>
+<exit><register-use number="1" state="preserved"/></exit>
+<use><p>LineEditor re-establishes its workspace and ReadLineV claim following a reset. On a soft reset it first releases TaskWindow instances which are no longer valid.</p></use>
+<related/>
+</service-definition>
+<service-definition name="WimpCloseDown" number="53" description="A Wimp task is closing down">
+<entry>
+ <register-use number="0">0 when the task is closing</register-use>
+ <register-use number="1">&hex;53 (reason code)</register-use>
+ <register-use number="2">Wimp task handle</register-use>
+</entry>
+<exit><register-use number="0-1" state="preserved"/></exit>
+<use><p>LineEditor releases the local history and editing state belonging to the closing TaskWindow. Service calls associated with Wimp initialisation are ignored.</p></use>
+<related><reference type="swi" name="LineEditor_CreateBuffer"/></related>
+</service-definition>
+</section>
+
+<section title="*Commands">
+<command-definition name="EdStatus" description="Displays history-buffer usage">
+<syntax/>
+<use><p>Displays the used, free and total byte counts and the number of recorded lines. With local histories enabled, information is shown for each history and the most recently used one is marked.</p></use>
+<related><reference type="command" name="Recall"/></related>
+</command-definition>
+<command-definition name="EraseHistory" description="Erases the current history">
+<syntax/>
+<use><p>Erases the global history, or the history belonging to the most recently used TaskWindow when local histories are enabled.</p></use>
+<related><reference type="command" name="Recall"/></related>
+</command-definition>
+<command-definition name="Recall" description="Displays the current history">
+<syntax/>
+<use><p>Lists the recorded lines in the global history, or in the most recently used TaskWindow history when local histories are enabled. Line numbers in the display begin at 1.</p></use>
+<related><reference type="command" name="EdStatus"/><reference type="command" name="EraseHistory"/></related>
+</command-definition>
+<command-definition name="LoadHistory" description="Adds lines from a text file to the current history">
+<syntax><userreplace>filename</userreplace></syntax>
+<parameter name="filename">Text file containing one history line per line.</parameter>
+<use><p>Reads the file into the global history, or the most recently used local history. A history is created if none exists. Lines pass through the configured recording filters; input beyond 255 characters on one line is ignored up to the next line terminator.</p></use>
+<related><reference type="command" name="SaveHistory"/></related>
+</command-definition>
+<command-definition name="SaveHistory" description="Saves the current history to a text file">
+<syntax><userreplace>filename</userreplace></syntax>
+<parameter name="filename">File to create or replace.</parameter>
+<use><p>Writes the global history, or the most recently used local history, in oldest-to-newest order with one entry per line. The resulting file is assigned filetype Text.</p></use>
+<related><reference type="command" name="LoadHistory"/></related>
+</command-definition>
+</section>
+
+<section title="Error Messages">
+<error-definition name="LineEditor_InvalidBuffer" number="83880" description="Invalid history buffer ID">
+<use><p>A private-history SWI was passed a handle which is not owned by LineEditor, or which has already been deleted.</p></use>
+</error-definition>
+<error-definition name="LineEditor_InUse" number="0" description="Line Editor in use">
+<use><p>An attempt was made to kill the module while a line edit was active or while a client-owned private history still existed. Finish the edit and delete every private buffer before retrying.</p></use>
+</error-definition>
+</section>
+
+<section title="Examples">
+<subsection title="Persistent command history">
+<p>Load a saved global history during boot and save it before shutdown:</p>
+<p><extended-example type="shell">
+<userinput>*LoadHistory Choices:LineEditor.History</userinput><br/>
+<userinput>*SaveHistory Choices:LineEditor.History</userinput>
+</extended-example></p>
+</subsection>
+<subsection title="Coloured command-line transitions">
+<p>Control sequences may be stored in the display-hook variables. For example, the following values select logical text colours for editing, completion lists, type markers and command output:</p>
+<p><extended-example type="shell">
+<userinput>*Set LineEditor$Edit &lt;17&gt;&lt;2&gt;</userinput><br/>
+<userinput>*Set LineEditor$List &lt;17&gt;&lt;3&gt;</userinput><br/>
+<userinput>*Set LineEditor$Type &lt;17&gt;&lt;4&gt;</userinput><br/>
+<userinput>*Set LineEditor$Output &lt;17&gt;&lt;5&gt;</userinput>
+</extended-example></p>
+</subsection>
+</section>
+</chapter>
+
+<meta>
+ <maintainer>
+  <email name="Charles Ferguson" address="gerph@gerph.org"/>
+ </maintainer>
+ <disclaimer>
+  <p>LineEditor software and original documentation &copy; Oliver Betts 1994-2000 and Darren Salt 2000-2002. This reference documentation &copy; Charles Ferguson 2026.</p>
+ </disclaimer>
+ <history>
+  <revision number="1.00" author="Charles Ferguson" date="9 Oct 2026" title="Canonical reference">
+   <change>Documented the module purpose, operation, configuration, SWIs, system variables, handled services, commands and errors from the maintained implementation and earlier user documentation.</change>
+  </revision>
+ </history>
+ <related>
+  <reference type="link" href="https://github.com/philpem/LineEditor">LineEditor project</reference>
+ </related>
+</meta>
+</riscos-prm>
