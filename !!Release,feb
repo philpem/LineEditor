@@ -3,6 +3,9 @@ Basic -chain <Obey$Dir>.LESrc
 CDir <Obey$Dir>.Release
 Copy <Obey$Dir>.* <Obey$Dir>.Release.* ~C~RQ
 
+IfThere <Obey$Dir>.Documentation Then CDir <Obey$Dir>.Release.Documentation
+IfThere <Obey$Dir>.Documentation Then Copy <Obey$Dir>.Documentation.* <Obey$Dir>.Release.Documentation.* ~CRQ
+
 Delete <Obey$Dir>.Release.!!Release
 Delete <Obey$Dir>.Release.KeyLib
 Delete <Obey$Dir>.Release.README/md

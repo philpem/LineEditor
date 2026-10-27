@@ -43,7 +43,15 @@ jobs:
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
+
+      - name: Build LineEditor documentation
+        uses: gerph/riscos-prminxml-action@v1
+        with:
+          files: prminxml/lineeditor.xml
+          output: Documentation
+          pdf-generator: prince
+          style: prm
 
       - name: Obtain prerequisite build tool
         run: |
@@ -62,8 +70,8 @@ jobs:
       - name: Give the output a versioned name
         id: version
         run: |
-          if [[ -f VersionNum ]] ; then
-              version=$(sed '/MajorVersion / ! d ; s/.*MajorVersion *"\(.*\)"/\1/' VersionNum)
+          if [ -f VersionNum ] ; then
+              version=$(sed -n 's/^#define Module_FullVersion *"\([^"]*\)"/\1/p' VersionNum)
           else
               version=$(git rev-parse --short HEAD)
           fi
@@ -78,7 +86,7 @@ jobs:
           echo "version=$version" >> $GITHUB_OUTPUT
           echo "leafname=$leafname" >> $GITHUB_OUTPUT
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: RISCOS-build
           path: ${{ steps.version.outputs.leafname }}
@@ -94,7 +102,7 @@ jobs:
       contents: write
     steps:
       - name: Download built RISC OS binary
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: RISCOS-build
 
